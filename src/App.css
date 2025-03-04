@@ -1,0 +1,9 @@
+body {
+  background-color: #f8f9fa;
+  color: #212529;
+  padding-top: 80px; /* Prevents content from hiding behind navbar */
+}
+
+.container {
+  max-width: 1100px;
+}
