@@ -1,53 +1,68 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./components/Home";
-import Student from "./components/Student";
-import About from "./components/About";
-import Navbar from "./components/Navbar";
-import Attendance from "./components/Attendance";
-import Atrecord from "./components/Atrecord";
-import { useState, useEffect } from "react";
+import { FaReact } from "react-icons/fa";
+import { useState } from "react";
+import React, { useEffect } from "react";
 
+import TopButtons from "./components/TopButtons";
+import Inputs from "./components/Inputs";
+import TimeAndLocation from "./components/TimeAndLocation";
+import TempAndDetails from "./components/TempAndDetails";
+import Forecast from "./components/Forecast";
+import getFormattedWeatherData from "./services/weatherService";
 
-function App() {
-  const [students, setStudents] = useState([]);
-  const [attendanceList, setAttendanceList] = useState([]);
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
-  // Load students from localStorage when app starts
-  useEffect(() => {
-    const storedStudents = JSON.parse(localStorage.getItem("students")) || [];
-    setStudents(storedStudents);
-  }, []);
-
-  // Save students to localStorage whenever updated
-  useEffect(() => {
-    localStorage.setItem("students", JSON.stringify(students));
-  }, [students]);
-
-  // Function to add a new student
-  const addStudent = (newStudent) => {
-    setStudents([...students, newStudent]);
-  };
-
-  // Function to update attendance records
-  const handleAttendance = (updatedList) => {
-    setAttendanceList(updatedList);
-  };
-
-  return (
-    <BrowserRouter>
-      <Navbar />
-      <div className="container mt-4">
-        <Routes>
-        <Route path="/" element={<Home />} />
-          <Route path="/Home" element={<Home />} />
-          <Route path="/Student" element={<Student data={students} addStudent={addStudent} />} />
-          <Route path="/About" element={<About />} />
-          <Route path="/Attendance" element={<Attendance students={students} handleAttendance={handleAttendance} />} />
-          <Route path="/Atrecord" element={<Atrecord List={attendanceList} />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
-  );
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1)
 }
 
+export const App = () => {
+  const [query, setQuery] = useState({ q: "chennai" })
+  const [units, setUnits] = useState("metric")
+  const [weather, setWeather] = useState(null)
+
+  const getWeather = async () => {
+    const cityName = query.q ? query.q : "current location"
+    toast.info(`Fetching weather data for ${capitalizeFirstLetter(cityName)}`)
+
+    await getFormattedWeatherData({ ...query, units }).then((data) => {
+      toast.success(`Fetched weather data for ${data.name}, ${data.country}`)
+      setWeather(data)
+    })
+    console.log(data)
+  }
+
+  useEffect(() => { 
+    getWeather();
+  }, [query, units])
+
+  const formatBackground = () => {
+    if (!weather) return "from-cyan-600 to-blue-700"
+    const threshold = units === "metric" ? 20 : 60
+    if (weather.temp <= threshold) return "from-cyan-600 to-blue-700"
+    return "from-yellow-600 to-orange-700"
+  }
+
+  return (
+    
+      <div 
+        className={`mx-auto max-w-screen-lg mt-4 py-5 px-32 bg-gradient-to-br shadow-xl shadow-gray-400 ${formatBackground()}`} >
+
+        <TopButtons setQuery={setQuery} />
+        <Inputs setQuery={setQuery} setUnits={setUnits} />
+
+        {weather && (
+          <>
+            <TimeAndLocation weather={weather} />
+            <TempAndDetails weather={weather} units={units} />
+            <Forecast title="3 hour step forecast" data={weather.hourly} />
+            <Forecast title="daily forecast" data={weather.daily} />
+          </>
+        )}  
+
+        <ToastContainer autoClose={2500} hideProgressBar={true} theme="colored" /> 
+      </div>
+      
+  )
+}
 export default App;
